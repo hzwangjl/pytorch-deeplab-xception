@@ -61,38 +61,26 @@ class SegmentDataset(Dataset):
         w, h = img.size
         crop_size = self.crop_size
 
-        # # random crop
-        # x_offset = 50
-        # y_offset = 0
-        # if((w - x_offset * 2) > crop_size):
-        #     x1 = random.randint(0 + x_offset, w - crop_size - x_offset) + x_offset
-        #     x2 = x1 + crop_size
-        # else:
-        #     x1 = 0
-        #     x2 = crop_size
-        # if((h - y_offset * 2) > crop_size):
-        #     y1 = random.randint(0 + y_offset, h - crop_size - y_offset) + y_offset
-        #     y2 = y1 + crop_size
-        # else:
-        #     y1 = 0
-        #     y2 = crop_size
-        # img = img.crop((x1, y1, x2, y2))
-        # mask = mask.crop((x1, y1, x2, y2))
-
         # Center Crop
-        w, h = img.size
-        crop_size = self.crop_size
-
-        if w != crop_size:
+        if w != h:
             img = img.crop((w/2 - h/2, 0, w/2 + h/2, h))
             mask = mask.crop((w/2 - h/2, 0, w/2 + h/2, h))
 
-        # resize
-        if img.size[0] != crop_size:
-            ow = crop_size
-            oh = crop_size
-            img = img.resize((ow, oh), Image.BILINEAR)
-            mask = mask.resize((ow, oh), Image.NEAREST)
+        # resize & ramdom crop
+        w, h = img.size
+        if w != crop_size:
+            if random.random() < 0.2:
+                x1 = random.randint(0, w - crop_size)
+                x2 = x1 + crop_size
+                y1 = random.randint(0, h - crop_size)
+                y2 = y1 + crop_size
+                img = img.crop((x1, y1, x2, y2))
+                mask = mask.crop((x1, y1, x2, y2))
+            else:
+                ow = crop_size
+                oh = crop_size
+                img = img.resize((ow, oh), Image.BILINEAR)
+                mask = mask.resize((ow, oh), Image.NEAREST)
 
         # Scale up
         if random.random() < 0.2:
@@ -117,7 +105,7 @@ class SegmentDataset(Dataset):
 
         # random rotate
         if random.random() < 0.3:
-            angle = random.randint(-30, 30)
+            angle = random.randint(-60, 60)
             img = img.rotate(angle)
             mask = mask.rotate(angle)
 
@@ -143,15 +131,18 @@ class SegmentDataset(Dataset):
         crop_size = self.crop_size
 
         # Center Crop
-        if w != crop_size:
+        if w != h:
             img = img.crop((w/2 - h/2, 0, w/2 + h/2, h))
             mask = mask.crop((w/2 - h/2, 0, w/2 + h/2, h))
 
-        if img.size[0] != crop_size:
+        # resize & ramdom crop
+        w, h = img.size
+        if w != crop_size:
             ow = crop_size
             oh = crop_size
             img = img.resize((ow, oh), Image.BILINEAR)
             mask = mask.resize((ow, oh), Image.NEAREST)
+
         return img, mask
 
 def mask_to_image(mask):
@@ -177,8 +168,8 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     args = parser.parse_args()
-    args.base_size = 480
-    args.crop_size = 480
+    args.base_size = 240
+    args.crop_size = 240
 
     train_transform=transforms.Compose([
         transforms.ColorJitter(brightness=0.5, contrast=0.25, saturation=0.25),
@@ -197,10 +188,6 @@ if __name__ == '__main__':
     valid_loader = DataLoader(valid_set, batch_size=1, shuffle=False, num_workers=8)
 
     for batch_idx, data in enumerate(train_loader):
-        # raw_img = data[0][0].numpy()*255
-        # raw_img = raw_img.astype('uint8')
-        # raw_img = np.transpose(raw_img,(1,2,0))
-
         img = data[0][0].numpy()*255
         img = img.astype('uint8')
         img = np.transpose(img,(1,2,0))
@@ -209,16 +196,11 @@ if __name__ == '__main__':
         mask[mask > train_set.NUM_CLASSES - 1] = 0
         mask = mask_to_image(mask)
 
-        # plt.subplot(1, 2, 1)
-        # plt.title('image')
-        # plt.imshow(raw_img)
-
         plt.subplot(1, 2, 1)
         plt.title('image')
         plt.imshow(img)
 
         plt.subplot(1, 2, 2)
-        plt.title('mask')
         plt.imshow(mask)
 
         save_file = "train/"
