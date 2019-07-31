@@ -10,4 +10,4 @@ CUDA_VISIBLE_DEVICES=0 python train.py \
     --checkname deeplab-mobilenet \
     --eval-interval 1 \
     --dataset mydataset \
-    2>&1 tee ${LOG_FILE} &
+    2>&1| tee ${LOG_FILE} &
