@@ -1,3 +1,7 @@
+#!/bin/bash
+
+LOG_FILE=$(date +%Y%m%d_%H_%M.log)
+
 CUDA_VISIBLE_DEVICES=0 python train.py \
     --backbone mobilenet \
     --lr 0.01 \
